@@ -29,9 +29,28 @@ socket.on('updatePlayers', (backEndPlayers) => {
       })
     }
     else {
-      //if a player already exists
-      frontEndPlayers[id].x = backEndPlayer.x
-      frontEndPlayers[id].y = backEndPlayer.y
+      if(id === socket.id) {
+        //if a player already exists
+        frontEndPlayers[id].x = backEndPlayer.x
+        frontEndPlayers[id].y = backEndPlayer.y
+
+        //server reconsoliation
+        const lastBackendInputIndex = playerInputs.findIndex((input) => {
+          return backEndPlayer.sequenceNumber === input.sequenceNumber
+        })
+
+        if(lastBackendInputIndex > -1)
+          playerInputs.splice(0, lastBackendInputIndex + 1)
+
+        playerInputs.forEach((input) => {
+          frontEndPlayers[id].x += input.dx
+          frontEndPlayers[id].y += input.dy 
+        })
+      } else {
+        //for all other players
+        frontEndPlayers[id].x = backEndPlayer.x
+        frontEndPlayers[id].y = backEndPlayer.y
+      }
     }
   }
 
@@ -74,25 +93,37 @@ const keys = {
 }
 
 const SPEED = 10
+const playerInputs = []
+let sequenceNumber = 0
+//Client side prediction - make it feel smoother for each player by updating the front end before the server has a chance to update and refresh
+// Server reconciliation fixes lag (too many updates on FE, BE can't keep up and you move backwards)
 setInterval(() => {
   if(keys.down.pressed) {
-    frontEndPlayers[socket.id].y -= SPEED
-    socket.emit('keydown', 'ArrowDown')
+    sequenceNumber++
+    playerInputs.push({ sequenceNumber, dx: 0, dy: SPEED })
+    frontEndPlayers[socket.id].y += SPEED //Client side prediction
+    socket.emit('keydown', {keyCode:'ArrowDown', sequenceNumber})
   }
 
   if(keys.up.pressed) {
-    frontEndPlayers[socket.id].y += SPEED
-    socket.emit('keydown', 'ArrowUp')
+    sequenceNumber++
+    playerInputs.push({ sequenceNumber, dx: 0, dy: -SPEED })
+    frontEndPlayers[socket.id].y -= SPEED //Client side prediction
+    socket.emit('keydown', {keyCode:'ArrowUp', sequenceNumber})
   }
 
   if(keys.left.pressed) {
-    frontEndPlayers[socket.id].x -= SPEED
-    socket.emit('keydown', 'ArrowLeft')
+    sequenceNumber++
+    playerInputs.push({ sequenceNumber, dx: SPEED, dy: 0 })
+    frontEndPlayers[socket.id].x -= SPEED //Client side prediction
+    socket.emit('keydown', {keyCode:'ArrowLeft', sequenceNumber})
   }
 
   if(keys.right.pressed) {
-    frontEndPlayers[socket.id].x += SPEED
-    socket.emit('keydown', 'ArrowRight')
+    sequenceNumber++
+    playerInputs.push({ sequenceNumber, dx: -SPEED, dy: 0 })
+    frontEndPlayers[socket.id].x += SPEED //Client side prediction
+    socket.emit('keydown', {keyCode:'ArrowRight', sequenceNumber})
   }
 }, 15)
 

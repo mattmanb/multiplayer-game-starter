@@ -4,7 +4,7 @@ const app = express() //express server
 //socket.io setup
 const http = require('http')
 const server = http.createServer(app) //http server
-const { Server } = require('socket.io') //
+const { Server } = require('socket.io') 
 const io = new Server(server, { pingInterval: 2000, pingTimeout: 5000 }) //socket io server wrapped around http server wrapped around express server
 
 const port = 3000
@@ -25,7 +25,8 @@ io.on('connection', (socket) => { //socket argument (important)
   backEndPlayers[socket.id] = { //socket has an id
     x:500 * Math.random(),
     y:500 * Math.random(),
-    color: `hsl(${360*Math.random()}, 100%, 50%)`
+    color: `hsl(${360*Math.random()}, 100%, 50%)`,
+    sequenceNumber: 0
   }
 
   io.emit('updatePlayers', backEndPlayers) //io.emit "emits" event to the front end, socket.emit emits only yo the player who JUST connected
@@ -36,8 +37,9 @@ io.on('connection', (socket) => { //socket argument (important)
     io.emit('updatePlayers', backEndPlayers)
   })
 
-  socket.on('keydown', (keycode) => {
-    switch(keycode) {
+  socket.on('keydown', ({ keyCode, sequenceNumber }) => {
+    backEndPlayers[socket.id].sequenceNumber = sequenceNumber // Server reconciliation
+    switch(keyCode) {
       case "ArrowDown":
         backEndPlayers[socket.id].y += SPEED
         break
@@ -59,7 +61,7 @@ io.on('connection', (socket) => { //socket argument (important)
 //setInterval on back end only has 1 interval; if it were on front end there would be an interval for every player
 setInterval(() => {
   io.emit('updatePlayers', backEndPlayers)
-}, 15) //updates players positions every 15 ms
+}, 1500) //updates players positions every 15 ms
 
 server.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
