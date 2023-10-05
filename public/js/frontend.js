@@ -48,8 +48,14 @@ socket.on('updatePlayers', (backEndPlayers) => {
         })
       } else {
         //for all other players
-        frontEndPlayers[id].x = backEndPlayer.x
-        frontEndPlayers[id].y = backEndPlayer.y
+
+        // Player Interpolation (smoothes other players movement in case of lag)
+        gsap.to(frontEndPlayers[id], {
+          x: backEndPlayer.x,
+          y: backEndPlayer.y,
+          duration: 0.015, //15ms
+          ease: 'linear'
+        })
       }
     }
   }
@@ -95,8 +101,10 @@ const keys = {
 const SPEED = 10
 const playerInputs = []
 let sequenceNumber = 0
-//Client side prediction - make it feel smoother for each player by updating the front end before the server has a chance to update and refresh
+// Client side prediction - make it feel smoother for each player by updating the front end before the server has a chance to update and refresh
 // Server reconciliation fixes lag (too many updates on FE, BE can't keep up and you move backwards)
+// Player Interpolation (smoothes other players movement in case of lag)
+
 setInterval(() => {
   if(keys.down.pressed) {
     sequenceNumber++

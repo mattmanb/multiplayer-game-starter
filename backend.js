@@ -61,7 +61,7 @@ io.on('connection', (socket) => { //socket argument (important)
 //setInterval on back end only has 1 interval; if it were on front end there would be an interval for every player
 setInterval(() => {
   io.emit('updatePlayers', backEndPlayers)
-}, 1500) //updates players positions every 15 ms
+}, 100) //updates players positions every 15 ms
 
 server.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
